@@ -14,35 +14,19 @@ logging.basicConfig(level=logging.DEBUG)
 import http.client
 http.client.HTTPConnection.debuglevel = 1
 
-# Configuration for AI and Salesforce
-CLIENT_ID_A = "codemie-epmc-sfac"
-CLIENT_SECRET_A = "bnyL3Y0KVjHAyK64Gj8VPWdInTPVaXlA"
-TOKEN_URL_A = "https://keycloak.eks-core.aws.main.edp.projects.epam.com/auth/realms/codemie-prod/protocol/openid-connect/token"
-ENDPOINT_URL = "https://codemie.lab.epam.com/code-assistant-api"
-ASSISTANT_ID = "5a9644fb-45a2-4a4c-b3b0-04e56438e0b9"
-
-SF_USERNAME = "nkn@tambolalwc.com"
-SF_PASSWORD = "iit8bombay@"
-SF_SECURITY_TOKEN = "your_security_token"
-
-# Configuration for AI and Salesforce
-CLIENT_ID = "3MVG9pe2TCoA1Pf7qdc9Ay2ASNuKSiV248U2sNLEXJ5lAttchijqXbgeyEn87fwA2YMmsnIgFPHM4eaDfWkEK"
-CLIENT_SECRET = "63BE4CD37E7C8C124F1A50227F0418669A3722168A949BC4B58F8B067C38158B"
-SF_INSTANCE_URL = "https://nkn-web-dev-ed.my.salesforce.com/"
-TOKEN_URL = f"{SF_INSTANCE_URL}/services/oauth2/token"
-
 # Temporary directories
 METADATA_DIR = "temp_metadata"
 ZIP_FILE_NAME = "metadata_deployable.zip"
 
 # Step 1: Authenticate with Salesforce via Connected App
-def login_to_salesforce():
+def login_to_salesforce(client_id, client_secret, sf_instance_url):
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     body = {
         "grant_type": "client_credentials",
-        "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET,
+        "client_id": client_id,
+        "client_secret": client_secret,
     }
+    TOKEN_URL = f"{sf_instance_url}/services/oauth2/token"
     response = requests.post(TOKEN_URL, headers=headers, data=body)
     if response.status_code == 200:
         auth_response = response.json()
@@ -52,14 +36,14 @@ def login_to_salesforce():
         raise Exception(f"Failed to log in to Salesforce: {response.status_code} {response.text}")
 
 # Step 1: Obtain Access Token
-def get_access_token():
+def get_access_token(client_id_a,client_secret_a,token_url_a):
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
     body = {
         "grant_type": "client_credentials",
-        "client_id": CLIENT_ID_A,
-        "client_secret": CLIENT_SECRET_A,
+         "client_id": client_id_a,
+        "client_secret": client_secret_a,
     }
-    response = requests.post(TOKEN_URL_A, headers=headers, data=body)
+    response = requests.post(token_url_a, headers=headers, data=body)
     if response.status_code == 200:
         return response.json()["access_token"]
     else:
@@ -67,13 +51,13 @@ def get_access_token():
 
 
 # Step 2: Create a Conversation
-def create_conversation(access_token):
+def create_conversation(token, endpoint_url, assistant_id):
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {access_token}",
+        "Authorization": f"Bearer {token}",
     }
-    body = {"initialAssistantId": ASSISTANT_ID}
-    response = requests.post(f"{ENDPOINT_URL}/v1/conversations", headers=headers, json=body)
+    body = {"initialAssistantId": assistant_id}
+    response = requests.post(f"{endpoint_url}/v1/conversations", headers=headers, json=body)
     if response.status_code == 200:
         return response.json()["id"]
     else:
@@ -81,13 +65,13 @@ def create_conversation(access_token):
 
 
 # Step 3: Ask the AI Assistant
-def ask_assistant(prompt, access_token, conversation_id):
+def ask_assistant(token, endpoint_url, assistant_id, conversation_id, prompt):
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {access_token}",
+        "Authorization": f"Bearer {token}",
     }
     body = {"text": prompt, "conversationId": conversation_id}
-    response = requests.post(f"{ENDPOINT_URL}/v1/assistants/{ASSISTANT_ID}/model", headers=headers, json=body)
+    response = requests.post(f"{endpoint_url}/v1/assistants/{assistant_id}/model", headers=headers, json=body)
 
     if response.status_code == 200:
         ai_response = response.json()
@@ -109,19 +93,57 @@ def ask_assistant(prompt, access_token, conversation_id):
 # Step 4: Save Metadata Files
 def save_metadata_files(ai_response):
     metadata_map = {
+       "ApexClass": "classes/{name}.cls",
+        "ApexTrigger": "triggers/{name}.trigger",
+        "ApprovalProcess": "approvalProcesses/{name}.approvalProcess",
+        "Queue": "queues/{name}.queue",
+        "CustomMetadata": "customMetadata/{name}.md",
         "CustomObject": "objects/{name}.object",
+        "CustomTab": "tabs/{name}.tab",
+        "CustomApplication": "applications/{name}.app",
+        "CustomApplicationComponent": "applicationComponents/{name}.appComponent",
+        "CustomLabels": "labels/CustomLabels.labels-meta.xml",
+        "FlexiPage": "flexipages/{name}.flexipage",
+        "GlobalValueSet": "globalValueSets/{name}.globalValueSet-meta.xml",
+        "QuickAction": "quickActions/{name}.quickAction",
+        "LightningComponentBundle": "lwc/{name}",
+        "Flow": "flows/{name}.flow",
+        "Layout": "layouts/{name}.layout-meta.xml",
         "PermissionSet": "permissionsets/{name}.permissionset-meta.xml",
-        "CustomLabel": "labels/CustomLabels.labels-meta.xml",
         "PageLayout": "layouts/{name}.layout-meta.xml",
         "PicklistValueSet": "globalValueSets/{name}.globalValueSet-meta.xml",
-        "ReportType": "reportTypes/{name}.reportType-meta.xml",
+        "ReportType": "reportTypes/{name}.reportType-meta.xml"
     }
 
     for entry in ai_response["metadata"]:
         metadata_type = entry["type"]
         file_template = metadata_map.get(metadata_type)
 
-        if file_template:
+        if metadata_type == "LightningComponentBundle":
+            component_name = entry.get("name", "UnnamedComponent")
+            component_dir = os.path.join(METADATA_DIR, "lwc", component_name)
+            os.makedirs(component_dir, exist_ok=True)
+
+            # Create .html file
+            html_content = entry.get("htmlContent", "")
+            with open(os.path.join(component_dir, f"{component_name}.html"), "w") as f:
+                f.write(html_content)
+
+            # Create .css file
+            css_content = entry.get("cssContent", "")
+            with open(os.path.join(component_dir, f"{component_name}.css"), "w") as f:
+                f.write(css_content)
+
+            # Create .js file
+            js_content = entry.get("jsContent", "")
+            with open(os.path.join(component_dir, f"{component_name}.js"), "w") as f:
+                f.write(js_content)
+
+            # Create .meta.xml file
+            meta_content = entry.get("metaContent", "")
+            with open(os.path.join(component_dir, f"{component_name}.js-meta.xml"), "w") as f:
+                f.write(meta_content)
+        elif file_template:
             file_path = os.path.join(METADATA_DIR, file_template.format(
                 name=entry.get("name", "Unnamed"),
                 objectName=entry.get("objectName", "UnknownObject")
@@ -134,51 +156,6 @@ def save_metadata_files(ai_response):
 
 
 # Step 5: Generate package.xml
-
-# def generate_package_xml(ai_response):
-#     package_xml_header = """<?xml version="1.0" encoding="UTF-8"?>
-# <Package xmlns="http://soap.sforce.com/2006/04/metadata">
-# """
-#     package_xml_footer = """  <version>57.0</version>
-# </Package>"""
-
-#     metadata_types = {}
-
-#     for entry in ai_response["metadata"]:
-#         metadata_type = entry["type"]
-#         name = entry["name"]
-
-#         # Adjust API names for metadata types
-#         if metadata_type in ["CustomField", "ValidationRule"]:
-#             # Fields and validation rules must include the object's API name
-#             object_name = entry.get("objectName")
-#             name = f"{object_name}.{name}"
-
-#         # Ensure proper CustomObject API name (e.g., Employee__c)
-#         if metadata_type == "CustomObject" and not name.endswith("__c"):
-#             name = f"{name}__c"
-
-#         if metadata_type not in metadata_types:
-#             metadata_types[metadata_type] = []
-#         metadata_types[metadata_type].append(name)
-
-#     # Build package.xml body
-#     package_xml_body = ""
-#     for metadata_type, members in metadata_types.items():
-#         package_xml_body += f"  <types>\n"
-#         for member in members:
-#             package_xml_body += f"    <members>{member}</members>\n"
-#         package_xml_body += f"    <name>{metadata_type}</name>\n"
-#         package_xml_body += f"  </types>\n"
-
-#     package_xml_content = package_xml_header + package_xml_body + package_xml_footer
-#     package_xml_path = os.path.join(METADATA_DIR, "package.xml")
-#     os.makedirs(os.path.dirname(package_xml_path), exist_ok=True)
-#     with open(package_xml_path, "w") as f:
-#         f.write(package_xml_content)
-#     print(f"Generated package.xml: {package_xml_path}")
-
-
 def generate_package_xml(ai_response):
     package_xml_header = """<?xml version="1.0" encoding="UTF-8"?>
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
@@ -337,7 +314,7 @@ def generate_dynamic_prompt(summary, description):
 
 # Main execution
 # if __name__ == "__main__":
-def process_jira(summary, description):
+def process_jira(prompt, client_id_a, client_secret_a, token_url_a, endpoint_url, assistant_id, client_id, client_secret, sf_instance_url):
     try:
         # jira_summary = "Create metadata for multiple configurations"
         # jira_description = """
@@ -363,16 +340,16 @@ def process_jira(summary, description):
         """
 
         # Generate AI prompt
-        prompt = generate_dynamic_prompt(summary, description)
+        # prompt = generate_dynamic_prompt(summary, description)
 
         print("Fetching access token...")
-        token = get_access_token()
+        token = get_access_token(client_id_a,client_secret_a,token_url_a)
 
         print("Creating conversation...")
-        conversation_id = create_conversation(token)
+        conversation_id = create_conversation(token, endpoint_url, assistant_id)
 
         print("Querying AI assistant...")
-        ai_response = ask_assistant(prompt, token, conversation_id)
+        ai_response = ask_assistant(token, endpoint_url, assistant_id, conversation_id, prompt)
 
         print("Saving metadata files...")
         save_metadata_files(ai_response)
@@ -384,14 +361,18 @@ def process_jira(summary, description):
         create_zip_package()
 
         print("Logging in to Salesforce...")
-        access_token, instance_url = login_to_salesforce()
+        access_token, instance_url = login_to_salesforce(client_id, client_secret, sf_instance_url)
 
         print("Deploying metadata to Salesforce...")
         deploy_metadata(access_token, instance_url)
 
         print("Process completed successfully!")
 
-        return "https://nkn-web-dev-ed.lightning.force.com/lightning/setup/DeployStatus/home"
+        # return "https://nkn-web-dev-ed.lightning.force.com/lightning/setup/DeployStatus/home"
+    
+        deployment_url = sf_instance_url+"/lightning/setup/DeployStatus/home"
+        zip_file_path = "metadata_deployable.zip"  # Ensure this matches the created ZIP file path
+        return deployment_url, zip_file_path
 
     except Exception as e:
         print(f"Error: {e}")
