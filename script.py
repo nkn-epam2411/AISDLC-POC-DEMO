@@ -121,6 +121,8 @@ def save_metadata_files(ai_response):
 
         if metadata_type == "LightningComponentBundle":
             component_name = entry.get("name", "UnnamedComponent")
+            # Convert component name to camelCase starting with a lowercase letter
+            component_name = component_name[0].lower() + component_name[1:]
             component_dir = os.path.join(METADATA_DIR, "lwc", component_name)
             os.makedirs(component_dir, exist_ok=True)
 
