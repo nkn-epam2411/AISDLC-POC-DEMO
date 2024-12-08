@@ -94,8 +94,10 @@ def ask_assistant(token, endpoint_url, assistant_id, conversation_id, prompt):
 # Step 4: Save Metadata Files
 def save_metadata_files(ai_response):
     metadata_map = {
-       "ApexClass": "classes/{name}.cls",
+        "ApexClass": "classes/{name}.cls",
+        "ApexClassMeta": "classes/{name}.cls-meta.xml",
         "ApexTrigger": "triggers/{name}.trigger",
+        "ApexTriggerMeta": "triggers/{name}.trigger-meta.xml",
         "ApprovalProcess": "approvalProcesses/{name}.approvalProcess",
         "Queue": "queues/{name}.queue",
         "CustomMetadata": "customMetadata/{name}.md",
@@ -154,6 +156,17 @@ def save_metadata_files(ai_response):
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, "w") as f:
                 f.write(entry["content"])
+            
+            # Create .meta.xml file for ApexClass and ApexTrigger
+            if metadata_type in ["ApexClass", "ApexTrigger"]:
+                meta_file_template = metadata_map.get(metadata_type + "Meta")
+                if meta_file_template:
+                    meta_file_path = os.path.join(METADATA_DIR, meta_file_template.format(
+                        name=entry.get("name", "Unnamed")
+                    ))
+                    meta_content = entry.get("metaContent", "")
+                    with open(meta_file_path, "w") as f:
+                        f.write(meta_content)
         else:
             print(f"Unsupported metadata type: {metadata_type}")
 
