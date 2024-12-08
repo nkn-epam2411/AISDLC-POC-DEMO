@@ -71,8 +71,9 @@ def ask_assistant(token, endpoint_url, assistant_id, conversation_id, prompt):
         "Authorization": f"Bearer {token}",
     }
     body = {"text": prompt, "conversationId": conversation_id}
+    print("json body", body)
     response = requests.post(f"{endpoint_url}/v1/assistants/{assistant_id}/model", headers=headers, json=body)
-
+    print("Raw Response:", response)
     if response.status_code == 200:
         ai_response = response.json()
         print("Raw AI Response:", ai_response)
