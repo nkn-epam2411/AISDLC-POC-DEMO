@@ -313,11 +313,15 @@ def upload_directory_to_github(issue_key, temp_metadata_dir, repo_owner, repo_na
     headers = {"Authorization": f"token {github_token}"}
     response = requests.get(f"{github_api_url}/git/ref/heads/main", headers=headers)
 
+    print("GIT GET Response:", response.text)
+
     if response.status_code != 200:
         raise Exception(f"Failed to fetch the default branch reference: {response.status_code} {response.text}")
 
     default_branch_data = response.json()
     sha_of_default_branch = default_branch_data['object']['sha']
+
+    print(f"Default branch reference fetched successfully: {sha_of_default_branch}")
 
     # Step 2: Create a new branch from the default branch
     branch_name = f"feature/{issue_key}"
