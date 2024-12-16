@@ -368,7 +368,7 @@ def upload_directory_to_github(issue_key, temp_metadata_dir, repo_owner, repo_na
 
 # Main execution
 # if __name__ == "__main__":
-def process_jira(prompt, client_id_a, client_secret_a, token_url_a, endpoint_url, assistant_id, client_id, client_secret, sf_instance_url,issue_key):
+def process_jira(prompt, client_id_a, client_secret_a, token_url_a, endpoint_url, assistant_id, client_id, client_secret, sf_instance_url,issue_key,git_pat):
     try:
 
         print("Fetching access token...")
@@ -398,8 +398,7 @@ def process_jira(prompt, client_id_a, client_secret_a, token_url_a, endpoint_url
         print("Process completed successfully!")
 
         print("Uploading directory to GitHub...")
-        # github_branch_url = upload_directory_to_github("AISDLC-1", METADATA_DIR, "nkn-epam2411", "DemoRepo", "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")
-        github_branch_url = upload_directory_to_github(issue_key, METADATA_DIR, "nkn-boss", "MetadataCreationAI", "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")
+        github_branch_url = upload_directory_to_github(issue_key, METADATA_DIR, "nkn-boss", "MetadataCreationAI", git_pat)
         
         return github_branch_url
 

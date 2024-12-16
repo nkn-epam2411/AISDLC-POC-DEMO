@@ -23,6 +23,7 @@ def deploy_metadata():
         client_secret = data.get("client_secret")
         sf_instance_url = data.get("sf_instance_url")
         issue_key = data.get("issue_key")
+        git_pat = data.get("git_pat")
 
         # Log incoming data for debugging
         print(f"Received Prompt: {prompt}")
@@ -38,7 +39,8 @@ def deploy_metadata():
             client_id, 
             client_secret, 
             sf_instance_url,
-            issue_key
+            issue_key,
+            git_pat
         )
 
         # Return the deployment URL and encoded ZIP content
