@@ -303,9 +303,9 @@ def deploy_metadata(access_token, instance_url):
         print("SOAP Response:", response.text)
 
 def upload_directory_to_github(issue_key, temp_metadata_dir, repo_owner, repo_name, github_token):
-    """
-    Upload all contents of a directory (files, folders, subfolders) to a new GitHub branch and publish the branch.
-    """
+    # """
+    # Upload all contents of a directory (files, folders, subfolders) to a new GitHub branch and publish the branch.
+    # """
     # GitHub API Base URL
     github_api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}"
 
