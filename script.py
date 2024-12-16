@@ -302,6 +302,7 @@ def deploy_metadata(access_token, instance_url):
         print(f"Failed to deploy metadata: {response.status_code}")
         print("SOAP Response:", response.text)
 
+
 def upload_directory_to_github(issue_key, temp_metadata_dir, repo_owner, repo_name, github_token):
     # """
     # Upload all contents of a directory (files, folders, subfolders) to a new GitHub branch and publish the branch.
@@ -341,7 +342,7 @@ def upload_directory_to_github(issue_key, temp_metadata_dir, repo_owner, repo_na
         for file_name in files:
             file_path = os.path.join(root, file_name)
             file_content = open(file_path, "rb").read()
-            file_path_in_repo = os.path.relpath(file_path, temp_metadata_dir)  # Relative path within the repo
+            file_path_in_repo = os.path.relpath(file_path, temp_metadata_dir).replace("\\", "/")  # Relative path within the repo
 
             # Encode the file content to base64
             base64_content = base64.b64encode(file_content).decode("utf-8")
@@ -358,16 +359,12 @@ def upload_directory_to_github(issue_key, temp_metadata_dir, repo_owner, repo_na
 
     print(f"All files from {temp_metadata_dir} uploaded successfully to branch {branch_name}.")
 
-    # Step 4: Publish the branch
-    publish_url = f"{github_api_url}/git/refs/heads/{branch_name}"
-    response = requests.patch(publish_url, headers=headers, json={"force": True})
-    if response.status_code not in [200, 201]:
-        raise Exception(f"Failed to publish the branch: {response.status_code} {response.text}")
 
     # URL of the newly created branch
     branch_url = f"https://github.com/{repo_owner}/{repo_name}/tree/{branch_name}"
     print(f"Branch {branch_name} published successfully. URL: {branch_url}")
     return branch_url
+
 
 # Main execution
 # if __name__ == "__main__":
@@ -402,14 +399,9 @@ def process_jira(prompt, client_id_a, client_secret_a, token_url_a, endpoint_url
 
         print("Uploading directory to GitHub...")
         # github_branch_url = upload_directory_to_github("AISDLC-1", METADATA_DIR, "nkn-epam2411", "DemoRepo", "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")
-        upload_directory_to_github("AISDLC-1", METADATA_DIR, "nkn-boss", "MetadataCreationAI", "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")
+        github_branch_url = upload_directory_to_github("AISDLC-1", METADATA_DIR, "nkn-boss", "MetadataCreationAI", "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")
         
-
-        # return "https://nkn-web-dev-ed.lightning.force.com/lightning/setup/DeployStatus/home"
-    
-        deployment_url = sf_instance_url+"/lightning/setup/DeployStatus/home"
-        zip_file_path = "metadata_deployable.zip"  # Ensure this matches the created ZIP file path
-        return deployment_url, zip_file_path
+        return github_branch_url
 
     except Exception as e:
         print(f"Error: {e}")

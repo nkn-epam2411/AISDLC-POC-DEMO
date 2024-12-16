@@ -27,7 +27,7 @@ def deploy_metadata():
         print(f"Received Prompt: {prompt}")
 
         # Call the main function in `script.py`
-        deployment_url, zip_file_path = process_jira(
+        deployment_url = process_jira(
             prompt,
             client_id_a, 
             client_secret_a, 
@@ -39,15 +39,10 @@ def deploy_metadata():
             sf_instance_url
         )
 
-        # Read and encode the ZIP file as base64
-        with open(zip_file_path, "rb") as f:
-            zip_content_base64 = base64.b64encode(f.read()).decode("utf-8")
-
         # Return the deployment URL and encoded ZIP content
         return jsonify({
             "status": "success",
-            "deployment_url": deployment_url,
-            "zip_file_base64": zip_content_base64
+            "deployment_url": deployment_url
         }), 200
 
         # return jsonify({"status": "success", "deployment_url": deployment_url}), 200
