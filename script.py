@@ -399,7 +399,7 @@ def process_jira(prompt, client_id_a, client_secret_a, token_url_a, endpoint_url
 
         print("Uploading directory to GitHub...")
         # github_branch_url = upload_directory_to_github("AISDLC-1", METADATA_DIR, "nkn-epam2411", "DemoRepo", "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")
-        github_branch_url = upload_directory_to_github(issue_key, METADATA_DIR, "nkn-boss", "MetadataCreationAI", "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")
+        github_branch_url = upload_directory_to_github(issue_key, METADATA_DIR, "nkn-boss", "MetadataCreationAI", "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")
         
         return github_branch_url
 
