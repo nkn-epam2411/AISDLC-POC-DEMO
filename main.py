@@ -28,7 +28,7 @@ def deploy_metadata():
         print(f"Received Prompt: {prompt}")
 
         # Call the main function in `script.py`
-        deployment_url = process_jira(
+        github_branch_url = process_jira(
             prompt,
             client_id_a, 
             client_secret_a, 
@@ -44,7 +44,7 @@ def deploy_metadata():
         # Return the deployment URL and encoded ZIP content
         return jsonify({
             "status": "success",
-            "deployment_url": deployment_url
+            "deployment_url": github_branch_url
         }), 200
 
         # return jsonify({"status": "success", "deployment_url": deployment_url}), 200
