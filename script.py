@@ -385,14 +385,14 @@ def process_jira(prompt, client_id_a, client_secret_a, token_url_a, endpoint_url
         print("Generating package.xml...")
         generate_package_xml(ai_response)
 
-        print("Creating ZIP package...")
-        create_zip_package()
+        # print("Creating ZIP package...")
+        # create_zip_package()
 
-        print("Logging in to Salesforce...")
-        access_token, instance_url = login_to_salesforce(client_id, client_secret, sf_instance_url)
+        # print("Logging in to Salesforce...")
+        # access_token, instance_url = login_to_salesforce(client_id, client_secret, sf_instance_url)
 
-        print("Deploying metadata to Salesforce...")
-        deploy_metadata(access_token, instance_url)
+        # print("Deploying metadata to Salesforce...")
+        # deploy_metadata(access_token, instance_url)
 
         print("Process completed successfully!")
 
