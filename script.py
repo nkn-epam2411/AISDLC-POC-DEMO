@@ -397,7 +397,7 @@ def process_jira(prompt, client_id_a, client_secret_a, token_url_a, endpoint_url
         print("Process completed successfully!")
 
         print("Uploading directory to GitHub...")
-        github_branch_url = upload_directory_to_github("AISDLC-1", METADATA_DIR, "nkn-epam2411", "DemoRepo", "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")
+        github_branch_url = upload_directory_to_github("AISDLC-1", METADATA_DIR, "nkn-epam2411", "DemoRepo", "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")
 
         # return "https://nkn-web-dev-ed.lightning.force.com/lightning/setup/DeployStatus/home"
     
