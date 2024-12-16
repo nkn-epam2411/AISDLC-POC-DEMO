@@ -73,7 +73,7 @@ def ask_assistant(token, endpoint_url, assistant_id, conversation_id, prompt):
     body = {"text": prompt, "conversationId": conversation_id}
     print("json body", body)
     response = requests.post(f"{endpoint_url}/v1/assistants/{assistant_id}/model", headers=headers, json=body)
-    print("Raw Response:", response)
+    print("Raw Response:", response.text)
     if response.status_code == 200:
         ai_response = response.json()
         print("Raw AI Response:", ai_response)
@@ -302,61 +302,74 @@ def deploy_metadata(access_token, instance_url):
         print(f"Failed to deploy metadata: {response.status_code}")
         print("SOAP Response:", response.text)
 
-# Step 7: Generate Prompt Dynamically
-def generate_dynamic_prompt(summary, description):
-    return f"""
-    Summary: {summary}
-    Description: {description}
-    Generate a structured JSON response for Salesforce Metadata generation.
-    Use this schema:
-    {{
-        "metadata": [
-            {{
-                "type": "CustomObject",
-                "name": "string",
-                "content": "string"
-            }},
-            {{
-                "type": "PermissionSet",
-                "name": "string",
-                "content": "string"
-            }}
-        ]
-    }}
-    Only include the metadata that is explicitly described in the story.
-    Populate the response based on the story details and metadata requirements.
-    """
+
+def upload_directory_to_github(issue_key, temp_metadata_dir, repo_owner, repo_name, github_token):
+    # """
+    # Upload all contents of a directory (files, folders, subfolders) to a new GitHub branch and publish the branch.
+    # """
+    # GitHub API Base URL
+    github_api_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}"
+
+    # Step 1: Get the default branch reference (usually "main" or "master")
+    headers = {"Authorization": f"token {github_token}"}
+    response = requests.get(f"{github_api_url}/git/ref/heads/main", headers=headers)
+
+    print("GIT GET Response:", response.text)
+
+    if response.status_code != 200:
+        raise Exception(f"Failed to fetch the default branch reference: {response.status_code} {response.text}")
+
+    default_branch_data = response.json()
+    sha_of_default_branch = default_branch_data['object']['sha']
+
+    print(f"Default branch reference fetched successfully: {sha_of_default_branch}")
+
+    # Step 2: Create a new branch from the default branch
+    branch_name = f"feature/{issue_key}"
+    payload = {
+        "ref": f"refs/heads/{branch_name}",
+        "sha": sha_of_default_branch
+    }
+
+    response = requests.post(f"{github_api_url}/git/refs", headers=headers, json=payload)
+    if response.status_code != 201:
+        raise Exception(f"Failed to create a new branch: {response.status_code} {response.text}")
+
+    print(f"Branch {branch_name} created successfully.")
+
+    # Step 3: Upload all files and folders from the temp_metadata_dir to the new branch
+    for root, dirs, files in os.walk(temp_metadata_dir):
+        for file_name in files:
+            file_path = os.path.join(root, file_name)
+            file_content = open(file_path, "rb").read()
+            file_path_in_repo = os.path.relpath(file_path, temp_metadata_dir).replace("\\", "/")  # Relative path within the repo
+
+            # Encode the file content to base64
+            base64_content = base64.b64encode(file_content).decode("utf-8")
+            payload = {
+                "message": f"Adding {file_path_in_repo} for issue {issue_key}",
+                "content": base64_content,
+                "branch": branch_name
+            }
+
+            # Commit each file
+            response = requests.put(f"{github_api_url}/contents/{file_path_in_repo}", headers=headers, json=payload)
+            if response.status_code not in [200, 201]:
+                raise Exception(f"Failed to upload {file_path_in_repo}: {response.status_code} {response.text}")
+
+    print(f"All files from {temp_metadata_dir} uploaded successfully to branch {branch_name}.")
+
+
+    # URL of the newly created branch
+    branch_url = f"https://github.com/{repo_owner}/{repo_name}/tree/{branch_name}"
+    print(f"Branch {branch_name} published successfully. URL: {branch_url}")
+    return branch_url
 
 
 # Main execution
 # if __name__ == "__main__":
-def process_jira(prompt, client_id_a, client_secret_a, token_url_a, endpoint_url, assistant_id, client_id, client_secret, sf_instance_url):
+def process_jira(prompt, client_id_a, client_secret_a, token_url_a, endpoint_url, assistant_id, client_id, client_secret, sf_instance_url,issue_key,git_pat):
     try:
-        # jira_summary = "Create metadata for multiple configurations"
-        # jira_description = """
-        # - Create a CustomObject named "Employee".
-        # - Add fields:
-        #   1. Name (Text, 80 characters).
-        #   2. Email (Email).
-        # - Add a validation rule: Email must be unique.
-        # - Create a Permission Set for Employee Management.
-        # """
-
-        # prompt = f"Summary: {jira_summary}\nDescription: {jira_description}"
-
-         # Jira issue details
-        jira_summary = "Create metadata for multiple configurations"
-        jira_description = """
-        - Create a CustomObject named "Employee".
-        - Add fields:
-          1. Name (Text, 80 characters).
-          2. Email (Email).
-        - Add a validation rule: Email must be unique.
-        - Create a Permission Set for Employee Management, Where we have Read & Create & Edit access Employee object & to it's all the fields.
-        """
-
-        # Generate AI prompt
-        # prompt = generate_dynamic_prompt(summary, description)
 
         print("Fetching access token...")
         token = get_access_token(client_id_a,client_secret_a,token_url_a)
@@ -373,22 +386,21 @@ def process_jira(prompt, client_id_a, client_secret_a, token_url_a, endpoint_url
         print("Generating package.xml...")
         generate_package_xml(ai_response)
 
-        print("Creating ZIP package...")
-        create_zip_package()
+        # print("Creating ZIP package...")
+        # create_zip_package()
 
-        print("Logging in to Salesforce...")
-        access_token, instance_url = login_to_salesforce(client_id, client_secret, sf_instance_url)
+        # print("Logging in to Salesforce...")
+        # access_token, instance_url = login_to_salesforce(client_id, client_secret, sf_instance_url)
 
-        print("Deploying metadata to Salesforce...")
-        deploy_metadata(access_token, instance_url)
+        # print("Deploying metadata to Salesforce...")
+        # deploy_metadata(access_token, instance_url)
 
         print("Process completed successfully!")
 
-        # return "https://nkn-web-dev-ed.lightning.force.com/lightning/setup/DeployStatus/home"
-    
-        deployment_url = sf_instance_url+"/lightning/setup/DeployStatus/home"
-        zip_file_path = "metadata_deployable.zip"  # Ensure this matches the created ZIP file path
-        return deployment_url, zip_file_path
+        print("Uploading directory to GitHub...")
+        github_branch_url = upload_directory_to_github(issue_key, METADATA_DIR, "nkn-boss", "MetadataCreationAI", git_pat)
+        
+        return github_branch_url
 
     except Exception as e:
         print(f"Error: {e}")
