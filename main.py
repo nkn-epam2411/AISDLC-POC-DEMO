@@ -22,6 +22,7 @@ def deploy_metadata():
         client_id = data.get("client_id")
         client_secret = data.get("client_secret")
         sf_instance_url = data.get("sf_instance_url")
+        issueKey = data.get("issueKey")
 
         # Log incoming data for debugging
         print(f"Received Prompt: {prompt}")
@@ -36,7 +37,8 @@ def deploy_metadata():
             assistant_id, 
             client_id, 
             client_secret, 
-            sf_instance_url
+            sf_instance_url,
+            issueKey
         )
 
         # Return the deployment URL and encoded ZIP content
