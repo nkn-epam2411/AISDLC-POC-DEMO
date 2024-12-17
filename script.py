@@ -18,6 +18,11 @@ http.client.HTTPConnection.debuglevel = 1
 METADATA_DIR = "temp_metadata"
 ZIP_FILE_NAME = "metadata_deployable.zip"
 
+def clear_temp_metadata():
+    if os.path.exists(METADATA_DIR):
+        shutil.rmtree(METADATA_DIR)
+    os.makedirs(METADATA_DIR)
+
 # Step 1: Authenticate with Salesforce via Connected App
 def login_to_salesforce(client_id, client_secret, sf_instance_url):
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -370,6 +375,9 @@ def upload_directory_to_github(issue_key, temp_metadata_dir, repo_owner, repo_na
 # if __name__ == "__main__":
 def process_jira(prompt, client_id_a, client_secret_a, token_url_a, endpoint_url, assistant_id, client_id, client_secret, sf_instance_url,issue_key,git_pat):
     try:
+
+        # Clear the temp_metadata directory
+        clear_temp_metadata()
 
         print("Fetching access token...")
         token = get_access_token(client_id_a,client_secret_a,token_url_a)
